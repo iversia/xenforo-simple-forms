@@ -92,10 +92,15 @@ class LiquidPro_SimpleForms_DataWriter_Response extends XenForo_DataWriter
 			
 			$attachmentModel = $this->_getAttachmentModel();
 			$attachments = $attachmentModel->getAttachmentsByTempHash($this->getExtraData(LiquidPro_SimpleForms_DataWriter_Response::DATA_ATTACHMENT_HASH));
-			
-			if ($form['require_attachment'] && $attachments === array())
+
+			if (count($attachments) < $form['require_attachment'])
 			{
-				$this->error(new XenForo_Phrase('lpsf_attachment_required'));
+				$this->error(new XenForo_Phrase('lpsf_minimal_x_attachment_required_uploaded_y_z_more',
+					array(
+						'uploaded' => count($attachments),
+						'min' => $form['require_attachment'],
+						'more' => $form['require_attachment'] - count($attachments),
+					)));
 			}
 		}
 		
@@ -141,7 +146,7 @@ class LiquidPro_SimpleForms_DataWriter_Response extends XenForo_DataWriter
 					$formDestination = new $destination['handler_class']($form['form_id'], $this->_updateFields, $destinationOptions, null, $this->get('response_id'));
 
 					// handle attachments
-					if ($destinationOptionModel->getAttachmentsEnabled($form['form_id']) && $attachments)
+					if ($destinationOptionModel->getAttachmentsDestinationHandlers($form['form_id']) && $attachments)
 					{
 						// create new temporary hash
 						$newAttachmentHash = md5(uniqid('', true));

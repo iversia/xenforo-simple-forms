@@ -31,8 +31,8 @@ class LiquidPro_SimpleForms_DataWriter_Form extends XenForo_DataWriter
 				'start_date'             => array('type' => self::TYPE_UNKNOWN, 'verification' => array('$this', '_verifyDate')),
 				'end_date'               => array('type' => self::TYPE_UNKNOWN, 'verification' => array('$this', '_verifyDate')),
 				'css'                    => array('type' => self::TYPE_STRING, 'required' => false, 'default' => ''),
-				'require_attachment'     => array('type' => self::TYPE_BOOLEAN, 'default' => 0, 'required' => true),
-			    'display_order'          => array('type' => self::TYPE_UINT),
+				'require_attachment'     => array('type' => self::TYPE_UINT, 'default' => 0, 'min' => 0, 'max' => 20, 'required' => true),
+				'display_order'          => array('type' => self::TYPE_UINT),
 			    'header_html'            => array('type' => self::TYPE_STRING, 'default' => ''),
 			    'footer_html'            => array('type' => self::TYPE_STRING, 'default' => '')
 			)
@@ -78,19 +78,28 @@ class LiquidPro_SimpleForms_DataWriter_Form extends XenForo_DataWriter
 	
 	protected function _postSave()
 	{
-		$this->getModelFromCache('XenForo_Model_Permission')->rebuildPermissionCache();
-		
-		// insert a dummy page
-		$pageDw = XenForo_DataWriter::create('LiquidPro_SimpleForms_DataWriter_Page');
-		$pageDw->bulkSet(array(
-		    'form_id' => $this->get('form_id'),
-		    'page_number' => 1,
-		    'title' => '',
-		    'description' => ''
-		));
-		$pageDw->save();
-		
+		if ($this->isInsert())
+		{
+			// insert a dummy page
+			$pageDw = XenForo_DataWriter::create('LiquidPro_SimpleForms_DataWriter_Page');
+			$pageDw->bulkSet(array(
+				'form_id' => $this->get('form_id'),
+				'page_number' => 1,
+				'title' => '',
+				'description' => ''
+			));
+			$pageDw->save();
+		}
+
 		parent::_postSave();
+	}
+
+	protected function _postSaveAfterTransaction()
+	{
+		if ($this->isInsert())
+		{
+			$this->getModelFromCache('XenForo_Model_Permission')->rebuildPermissionCache();
+		}
 	}
 	
 	/**
